@@ -1,0 +1,5 @@
+{
+  "name": "Annuaire ADALC",
+  "description": "Alumni directory for ADALC allowing users to search by multiple criteria and contact alumni via a privacy-preserving proxy email system.",
+  "requestFramePermissions": []
+}
