@@ -3,12 +3,13 @@ import { Alumni, SearchFilters as FilterType } from './types';
 import { fetchAlumniData } from './services/dataService';
 import { SearchFilters } from './components/SearchFilters';
 import { ContactModal } from './components/ContactModal';
-import { User, Briefcase, Loader2, Search } from 'lucide-react';
+import { User, Briefcase, Loader2, Search, Flag } from 'lucide-react';
 
 function App() {
   const [data, setData] = useState<Alumni[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAlumni, setSelectedAlumni] = useState<Alumni | null>(null);
+  const [modalMode, setModalMode] = useState<'contact' | 'report'>('contact');
   const [hasSearched, setHasSearched] = useState(false);
   
   const [filters, setFilters] = useState<FilterType>({
@@ -59,6 +60,16 @@ function App() {
     if (e.key === 'Enter') {
       handleSearch();
     }
+  };
+
+  const openContactModal = (alumnus: Alumni) => {
+    setSelectedAlumni(alumnus);
+    setModalMode('contact');
+  };
+
+  const openReportModal = (alumnus: Alumni) => {
+    setSelectedAlumni(alumnus);
+    setModalMode('report');
   };
 
   return (
@@ -120,7 +131,7 @@ function App() {
                 {filteredData.map((alumnus) => (
                   <div 
                     key={alumnus.id} 
-                    className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col"
+                    className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col group"
                   >
                     <div className="p-6 flex-grow">
                       <div className="flex justify-between items-start mb-4">
@@ -134,20 +145,26 @@ function App() {
                         )}
                       </div>
                       
-                      <h3 className="text-xl font-bold text-gray-900 mb-1">
+                      <h3 className="text-xl font-bold text-gray-900 mb-1 pr-6">
                         {alumnus.prenom} {alumnus.nom ? `${alumnus.nom.charAt(0).toUpperCase()}.` : ''}
                       </h3>
                       
-                      {/* Removed detailed info section (Profession, Ville, Pays, Etudes) as requested */}
                     </div>
 
-                    <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                    <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex space-x-2">
                       <button
-                        onClick={() => setSelectedAlumni(alumnus)}
-                        className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-adalc-orange hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-adalc-orange transition-colors"
+                        onClick={() => openContactModal(alumnus)}
+                        className="flex-1 inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-adalc-orange hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-adalc-orange transition-colors"
                       >
                         <Briefcase className="h-4 w-4 mr-2" />
                         Contacter
+                      </button>
+                      <button
+                        onClick={() => openReportModal(alumnus)}
+                        className="inline-flex justify-center items-center px-3 py-2 border border-gray-200 rounded-md bg-white text-gray-400 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors"
+                        title="Signaler une erreur"
+                      >
+                        <Flag className="h-4 w-4" />
                       </button>
                     </div>
                   </div>
@@ -170,6 +187,7 @@ function App() {
       {selectedAlumni && (
         <ContactModal 
           alumni={selectedAlumni} 
+          mode={modalMode}
           onClose={() => setSelectedAlumni(null)} 
         />
       )}

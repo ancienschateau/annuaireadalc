@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { X, Send, Mail, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { X, Send, Mail, Loader2, CheckCircle, AlertCircle, Flag } from 'lucide-react';
 import { Alumni } from '../types';
 
 interface Props {
   alumni: Alumni | null;
   onClose: () => void;
+  mode: 'contact' | 'report';
 }
 
 // Configurazione URL Google Apps Script
@@ -19,7 +20,7 @@ interface EmailStats {
   startTime: number;
 }
 
-export const ContactModal: React.FC<Props> = ({ alumni, onClose }) => {
+export const ContactModal: React.FC<Props> = ({ alumni, onClose, mode }) => {
   const [formData, setFormData] = useState({
     senderName: '',
     senderEmail: '',
@@ -29,6 +30,8 @@ export const ContactModal: React.FC<Props> = ({ alumni, onClose }) => {
   const [errorMessage, setErrorMessage] = useState('');
 
   if (!alumni) return null;
+
+  const isReport = mode === 'report';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,23 +74,25 @@ export const ContactModal: React.FC<Props> = ({ alumni, onClose }) => {
     setErrorMessage('');
 
     try {
+      // Prepariamo il messaggio. Se è un report, aggiungiamo un prefisso chiaro per la segreteria.
+      const finalMessage = isReport 
+        ? `[SIGNALEMENT / ERREUR]\nMotivo: Segnalazione dati inesatti, decesso o altro.\n\nContenuto messaggio:\n${formData.message}`
+        : formData.message;
+
       // Utilizziamo 'no-cors' perché Google Apps Script effettua dei redirect
-      // che i browser bloccano per sicurezza (CORS).
-      // Con 'no-cors' possiamo inviare i dati (fire and forget), ma non possiamo
-      // leggere la risposta JSON di ritorno (status 200/ok).
-      // Assumiamo che se la fetch non fallisce (network error), l'invio è riuscito.
       await fetch(GOOGLE_SCRIPT_URL, {
         method: 'POST',
         mode: 'no-cors', 
         headers: {
-          'Content-Type': 'text/plain', // Importante: text/plain evita il "preflight" CORS option request
+          'Content-Type': 'text/plain',
         },
         body: JSON.stringify({
           senderName: formData.senderName,
           senderEmail: formData.senderEmail,
-          message: formData.message,
+          message: finalMessage,
           alumniName: `${alumni.nom} ${alumni.prenom}`,
-          alumniBac: alumni.bac || 'N/A'
+          alumniBac: alumni.bac || 'N/A',
+          type: mode // Passiamo il tipo anche se lo script backend potrebbe ignorarlo, utile per il futuro
         })
       });
 
@@ -121,10 +126,19 @@ export const ContactModal: React.FC<Props> = ({ alumni, onClose }) => {
         <div className="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
           
           {/* Header */}
-          <div className="bg-gradient-to-r from-orange-50 to-white px-4 py-4 sm:px-6 border-b border-gray-100 flex justify-between items-center">
+          <div className={`px-4 py-4 sm:px-6 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r ${isReport ? 'from-red-50 to-white' : 'from-orange-50 to-white'}`}>
             <h3 className="text-lg leading-6 font-bold text-gray-900 flex items-center">
-               <Mail className="h-5 w-5 text-adalc-orange mr-2" />
-               Contacter un ancien élève
+               {isReport ? (
+                 <>
+                   <Flag className="h-5 w-5 text-red-500 mr-2" />
+                   Signaler une erreur
+                 </>
+               ) : (
+                 <>
+                   <Mail className="h-5 w-5 text-adalc-orange mr-2" />
+                   Contacter un ancien élève
+                 </>
+               )}
             </h3>
             <button
               type="button"
@@ -141,10 +155,18 @@ export const ContactModal: React.FC<Props> = ({ alumni, onClose }) => {
             {/* IDLE STATE: Form */}
             {status === 'idle' && (
               <div>
-                <div className="mb-5 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm text-blue-800">
+                <div className={`mb-5 border rounded-lg p-3 text-sm ${isReport ? 'bg-red-50 border-red-100 text-red-800' : 'bg-blue-50 border-blue-100 text-blue-800'}`}>
                   <span className="font-semibold block mb-1">Information</span>
-                  Vous écrivez à <strong>{alumni.prenom} {alumni.nom ? `${alumni.nom.charAt(0)}.` : ''}</strong>. 
-                  Pour des raisons de confidentialité, votre message sera d'abord reçu par le secrétariat de l'ADALC (info@adalc.net) qui le transmettra.
+                  {isReport ? (
+                    <>
+                      Vous signalez une information concernant <strong>{alumni.prenom} {alumni.nom ? `${alumni.nom.charAt(0)}.` : ''}</strong> (erreur, changement de situation, décès). Ce message sera traité par le secrétariat de l'ADALC.
+                    </>
+                  ) : (
+                    <>
+                      Vous écrivez à <strong>{alumni.prenom} {alumni.nom ? `${alumni.nom.charAt(0)}.` : ''}</strong>. 
+                      Pour des raisons de confidentialité, votre message sera d'abord reçu par le secrétariat de l'ADALC (info@adalc.net) qui le transmettra.
+                    </>
+                  )}
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -154,7 +176,7 @@ export const ContactModal: React.FC<Props> = ({ alumni, onClose }) => {
                       required
                       type="text"
                       placeholder="Ex: Jean Dupont"
-                      className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 bg-white focus:outline-none focus:ring-2 focus:ring-adalc-orange focus:border-transparent sm:text-sm transition-shadow"
+                      className={`mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 bg-white focus:outline-none focus:ring-2 focus:border-transparent sm:text-sm transition-shadow ${isReport ? 'focus:ring-red-500' : 'focus:ring-adalc-orange'}`}
                       value={formData.senderName}
                       onChange={e => setFormData({...formData, senderName: e.target.value})}
                     />
@@ -165,18 +187,20 @@ export const ContactModal: React.FC<Props> = ({ alumni, onClose }) => {
                       required
                       type="email"
                       placeholder="Ex: jean.dupont@email.com"
-                      className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 bg-white focus:outline-none focus:ring-2 focus:ring-adalc-orange focus:border-transparent sm:text-sm transition-shadow"
+                      className={`mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 bg-white focus:outline-none focus:ring-2 focus:border-transparent sm:text-sm transition-shadow ${isReport ? 'focus:ring-red-500' : 'focus:ring-adalc-orange'}`}
                       value={formData.senderEmail}
                       onChange={e => setFormData({...formData, senderEmail: e.target.value})}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Message</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      {isReport ? "Détails du signalement" : "Message"}
+                    </label>
                     <textarea
                       required
                       rows={4}
-                      placeholder="Écrivez votre message ici..."
-                      className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 bg-white focus:outline-none focus:ring-2 focus:ring-adalc-orange focus:border-transparent sm:text-sm transition-shadow"
+                      placeholder={isReport ? "Décrivez l'erreur ou l'information à mettre à jour..." : "Écrivez votre message ici..."}
+                      className={`mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 bg-white focus:outline-none focus:ring-2 focus:border-transparent sm:text-sm transition-shadow ${isReport ? 'focus:ring-red-500' : 'focus:ring-adalc-orange'}`}
                       value={formData.message}
                       onChange={e => setFormData({...formData, message: e.target.value})}
                     ></textarea>
@@ -184,10 +208,10 @@ export const ContactModal: React.FC<Props> = ({ alumni, onClose }) => {
                   <div className="pt-2">
                     <button
                       type="submit"
-                      className="w-full inline-flex justify-center items-center rounded-lg border border-transparent shadow-sm px-4 py-3 bg-adalc-orange text-base font-medium text-white hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-adalc-orange transition-all transform hover:scale-[1.02]"
+                      className={`w-full inline-flex justify-center items-center rounded-lg border border-transparent shadow-sm px-4 py-3 text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all transform hover:scale-[1.02] ${isReport ? 'bg-red-600 hover:bg-red-700 focus:ring-red-500' : 'bg-adalc-orange hover:bg-orange-600 focus:ring-adalc-orange'}`}
                     >
-                      <Send className="h-4 w-4 mr-2" />
-                      Envoyer le message
+                      {isReport ? <Flag className="h-4 w-4 mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+                      {isReport ? "Envoyer le signalement" : "Envoyer le message"}
                     </button>
                   </div>
                 </form>
@@ -197,7 +221,7 @@ export const ContactModal: React.FC<Props> = ({ alumni, onClose }) => {
             {/* SENDING STATE */}
             {status === 'sending' && (
               <div className="py-12 flex flex-col items-center justify-center text-center">
-                <Loader2 className="h-12 w-12 text-adalc-orange animate-spin mb-4" />
+                <Loader2 className={`h-12 w-12 animate-spin mb-4 ${isReport ? 'text-red-600' : 'text-adalc-orange'}`} />
                 <h3 className="text-lg font-medium text-gray-900">Envoi en cours...</h3>
                 <p className="text-gray-500 mt-2">Veuillez patienter quelques instants.</p>
               </div>
@@ -209,9 +233,14 @@ export const ContactModal: React.FC<Props> = ({ alumni, onClose }) => {
                 <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4 animate-fadeIn">
                   <CheckCircle className="h-10 w-10 text-green-600" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Message envoyé !</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  {isReport ? "Signalement envoyé !" : "Message envoyé !"}
+                </h3>
                 <p className="text-gray-600 max-w-xs mx-auto mb-6">
-                  Votre demande a été transmise avec succès à l'ADALC. Vous recevrez une réponse prochainement.
+                  {isReport 
+                    ? "Merci. L'information a été transmise au secrétariat de l'ADALC pour vérification."
+                    : "Votre demande a été transmise avec succès à l'ADALC. Vous recevrez une réponse prochainement."
+                  }
                 </p>
                 <button
                   type="button"
