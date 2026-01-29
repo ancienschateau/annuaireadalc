@@ -20,7 +20,8 @@ export const SearchFilters: React.FC<Props> = ({ filters, onFilterChange }) => {
       bac: '',
       pays: '',
       profession: '',
-      etudes: ''
+      etudes: '',
+      lieu_naiss: ''
     });
   };
 
@@ -70,7 +71,7 @@ export const SearchFilters: React.FC<Props> = ({ filters, onFilterChange }) => {
 
       {/* Advanced Filters Grid */}
       {isExpanded && (
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-fadeIn">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 animate-fadeIn">
           {/* BAC Year */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
@@ -96,6 +97,20 @@ export const SearchFilters: React.FC<Props> = ({ filters, onFilterChange }) => {
               placeholder="Ex: Italie"
               value={filters.pays}
               onChange={(e) => handleChange('pays', e.target.value)}
+            />
+          </div>
+
+          {/* Lieu de naissance */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+              Lieu de naissance
+            </label>
+            <input
+              type="text"
+              className="block w-full px-3 py-2 text-base border-gray-200 bg-adalc-input focus:outline-none focus:ring-adalc-orange focus:border-adalc-orange sm:text-sm rounded-md placeholder-gray-400"
+              placeholder="Ex: Paris"
+              value={filters.lieu_naiss}
+              onChange={(e) => handleChange('lieu_naiss', e.target.value)}
             />
           </div>
 

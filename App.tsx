@@ -17,7 +17,8 @@ function App() {
     bac: '',
     pays: '',
     profession: '',
-    etudes: ''
+    etudes: '',
+    lieu_naiss: ''
   });
 
   // Fetch Data on Mount (Background)
@@ -47,8 +48,9 @@ function App() {
       const matchPays = matches(item.pays, filters.pays);
       const matchProfession = matches(item.profession, filters.profession);
       const matchEtudes = matches(item.etudes, filters.etudes);
+      const matchLieuNaiss = matches(item.lieu_naiss, filters.lieu_naiss);
 
-      return matchQuery && matchBac && matchPays && matchProfession && matchEtudes;
+      return matchQuery && matchBac && matchPays && matchProfession && matchEtudes && matchLieuNaiss;
     });
   }, [data, filters]);
 

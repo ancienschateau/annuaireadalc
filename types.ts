@@ -22,6 +22,7 @@ export interface SearchFilters {
   pays: string;
   profession: string;
   etudes: string;
+  lieu_naiss: string;
 }
 
 export const DATA_COLUMNS = [
